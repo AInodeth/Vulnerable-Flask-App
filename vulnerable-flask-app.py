@@ -17,7 +17,7 @@ def main_page():
 def search_user(name):
     con = sqlite3.connect("test.db")
     cur = con.cursor()
-    cur.execute("select * from test where username = '%s'" % name)
+    cur.execute(f"select * from test where username = '{name}'")
     data = str(cur.fetchall())
     con.close()
     import logging
@@ -28,13 +28,12 @@ def search_user(name):
 
 @app.route("/welcome/<string:name>")
 def welcome(name):
-    data="Welcome "+name
+    data = f"Welcome {name}"
     return jsonify(data=data),200
 
 @app.route("/welcome2/<string:name>")
 def welcome2(name):
-    data="Welcome "+name
-    return data
+    return f"Welcome {name}"
 
 @app.route("/hello")
 def hello_ssti():
@@ -54,19 +53,16 @@ def hello_ssti():
 def get_users():
     try:
         hostname = request.args.get('hostname')
-        command = "dig " + hostname
-        data = subprocess.check_output(command, shell=True)
-        return data
+        command = f"dig {hostname}"
+        return subprocess.check_output(command, shell=True)
     except:
-        data = str(hostname) + " username didn't found"
-        return data
+        return f"{str(hostname)} username didn't found"
 
 @app.route("/get_log/")
 def get_log():
     try:
         command="cat restapi.log"
-        data=subprocess.check_output(command,shell=True)
-        return data
+        return subprocess.check_output(command,shell=True)
     except:
         return jsonify(data="Command didn't run"), 200
 
@@ -74,9 +70,8 @@ def get_log():
 @app.route("/read_file")
 def read_file():
     filename = request.args.get('filename')
-    file = open(filename, "r")
-    data = file.read()
-    file.close()
+    with open(filename, "r") as file:
+        data = file.read()
     import logging
     logging.basicConfig(filename="restapi.log", filemode='w', level=logging.DEBUG)
     logging.debug(str(data))
@@ -102,22 +97,20 @@ def deserialization():
 
 @app.route("/get_admin_mail/<string:control>")
 def get_admin_mail(control):
-    if control=="admin":
-        data="admin@cybersecurity.intra"
-        import logging
-        logging.basicConfig(filename="restapi.log", filemode='w', level=logging.DEBUG)
-        logging.debug(data)
-        return jsonify(data=data),200
-    else:
+    if control != "admin":
         return jsonify(data="Control didn't set admin"), 200
+    data="admin@cybersecurity.intra"
+    import logging
+    logging.basicConfig(filename="restapi.log", filemode='w', level=logging.DEBUG)
+    logging.debug(data)
+    return jsonify(data=data),200
 
 @app.route("/run_file")
 def run_file():
     try:
         filename=request.args.get("filename")
-        command="/bin/bash "+filename
-        data=subprocess.check_output(command,shell=True)
-        return data
+        command = f"/bin/bash {filename}"
+        return subprocess.check_output(command,shell=True)
     except:
         return jsonify(data="File failed to run"), 200
 
@@ -126,9 +119,8 @@ def create_file():
     try:
         filename=request.args.get("filename")
         text=request.args.get("text")
-        file=open(filename,"w")
-        file.write(text)
-        file.close()
+        with open(filename,"w") as file:
+            file.write(text)
         return jsonify(data="File created"), 200
     except:
         return jsonify(data="File didn't create"), 200
@@ -138,10 +130,7 @@ connection = {}
 max_con = 50
 
 def factorial(number):
-    if number == 1:
-        return 1
-    else:
-        return number * factorial(number - 1)
+    return 1 if number == 1 else number * factorial(number - 1)
 
 
 @app.route('/factorial/<int:n>')
@@ -202,14 +191,9 @@ def user_pass_control():
 
 @app.route('/upload', methods = ['GET','POST'])
 def uploadfile():
-   import os
-   if request.method == 'POST':
-      f = request.files['file']
-      filename=secure_filename(f.filename)
-      f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-      return 'File uploaded successfully'
-   else:
-      return '''
+    import os
+    if request.method != 'POST':
+        return '''
 <html>
    <body>
       <form  method = "POST"  enctype = "multipart/form-data">
@@ -221,6 +205,10 @@ def uploadfile():
 
 
       '''
+    f = request.files['file']
+    filename=secure_filename(f.filename)
+    f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    return 'File uploaded successfully'
 
 
 
